@@ -3,8 +3,10 @@ import "./Verify.css";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import api from "../../services/api";
+import { jwtDecode } from "jwt-decode";
 
 function Verify() {
+
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -19,8 +21,8 @@ function Verify() {
 
         setError("");
 
-        if (!code) {
-            setError("Doğrulama kodunu giriniz.");
+        if (!email) {
+            setError("Email bilgisi bulunamadı. Lütfen tekrar giriş yapın.");
             return;
         }
 
@@ -29,12 +31,8 @@ function Verify() {
             return;
         }
 
-        if (!email) {
-            setError("Email bilgisi bulunamadı.");
-            return;
-        }
-
         try {
+
             setLoading(true);
 
             const response = await api.post("/Auth/verify", {
@@ -42,30 +40,51 @@ function Verify() {
                 code
             });
 
-            console.log(response.data);
-
             const token = response.data.token;
 
             if (!token) {
-                setError("Token alınamadı.");
+                setError("Giriş tokenı alınamadı.");
                 return;
             }
 
             // JWT token'ı kaydet
             localStorage.setItem("token", token);
 
-            // Ana sayfaya git
-            navigate("/");
+            // JWT içindeki bilgileri oku
+            const decodedToken = jwtDecode(token);
+
+            console.log("JWT:", decodedToken);
+
+            // ASP.NET Core Role claim'i
+            const role =
+                decodedToken[
+                    "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+                ];
+
+            console.log("Kullanıcı rolü:", role);
+
+            // Admin ise admin paneline gönder
+            if (role === "Admin") {
+                navigate("/admin");
+                return;
+            }
+
+            // Normal kullanıcı
+            navigate("/home");
 
         } catch (error) {
+
             console.error(error);
 
             setError(
                 error.response?.data?.message ||
-                "Doğrulama kodu geçersiz veya süresi dolmuş."
+                "Doğrulama kodu geçersiz."
             );
+
         } finally {
+
             setLoading(false);
+
         }
     };
 
@@ -74,32 +93,19 @@ function Verify() {
 
             <div className="verify-container">
 
-                <div className="verify-brand">
-                    <span>🛒</span>
-                    <strong>E-Commerce</strong>
-                </div>
-
                 <div className="verify-icon">
                     ✉️
                 </div>
 
-                <h1>Email Adresini Doğrula</h1>
+                <h1>Email Doğrulama</h1>
 
-                <p className="verify-description">
-                    Email adresinize gönderdiğimiz 6 haneli
-                    doğrulama kodunu aşağıya giriniz.
+                <p>
+                    <strong>{email}</strong>
+                    <br />
+                    adresine gönderilen 6 haneli kodu giriniz.
                 </p>
 
-                {email && (
-                    <div className="verify-email">
-                        {email}
-                    </div>
-                )}
-
-                <form
-                    className="verify-form"
-                    onSubmit={handleVerify}
-                >
+                <form onSubmit={handleVerify}>
 
                     <div className="form-group">
 
@@ -110,8 +116,7 @@ function Verify() {
                         <input
                             id="code"
                             type="text"
-                            inputMode="numeric"
-                            maxLength={6}
+                            maxLength="6"
                             placeholder="123456"
                             value={code}
                             onChange={(e) =>
@@ -131,22 +136,21 @@ function Verify() {
 
                     <button
                         type="submit"
-                        className="verify-button"
                         disabled={loading}
                     >
                         {loading
                             ? "Doğrulanıyor..."
-                            : "Email'i Doğrula"}
+                            : "Doğrula ve Devam Et"}
                     </button>
 
                 </form>
 
                 <button
+                    className="back-button"
                     type="button"
-                    className="back-login"
                     onClick={() => navigate("/")}
                 >
-                    ← Giriş sayfasına dön
+                    Giriş sayfasına dön
                 </button>
 
             </div>

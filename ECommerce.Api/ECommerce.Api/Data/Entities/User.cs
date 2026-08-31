@@ -19,5 +19,5 @@ public class User
     public ICollection<EmailVerificationCode> VerificationCodes { get; set; }
         = new List<EmailVerificationCode>();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
+    public ICollection<Review> Reviews { get; set; } = new List<Review>();
 }

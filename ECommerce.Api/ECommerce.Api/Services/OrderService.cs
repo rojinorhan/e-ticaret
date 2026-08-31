@@ -1,4 +1,3 @@
-
 using ECommerce.Api.Data;
 using ECommerce.Api.Data.Entities;
 using ECommerce.Api.DTOs.Order;
@@ -57,7 +56,7 @@ public class OrderService : IOrderService
         var order = new Order
         {
             UserId = userId,
-            Status = "Pending",
+            Status = OrderStatus.Pending,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -160,16 +159,10 @@ public class OrderService : IOrderService
         string status,
         CancellationToken cancellationToken)
     {
-        var allowedStatuses = new[]
-        {
-            "Pending",
-            "Confirmed",
-            "Shipped",
-            "Delivered",
-            "Cancelled"
-        };
-
-        if (!allowedStatuses.Contains(status))
+        if (!Enum.TryParse<OrderStatus>(
+                status,
+                ignoreCase: false,
+                out var orderStatus))
         {
             throw new ArgumentException(
                 "Geçersiz sipariş durumu.");
@@ -188,7 +181,7 @@ public class OrderService : IOrderService
                 "Sipariş bulunamadı.");
         }
 
-        order.Status = status;
+        order.Status = orderStatus;
 
         await _context.SaveChangesAsync(
             cancellationToken);
@@ -204,7 +197,9 @@ public class OrderService : IOrderService
             Id = order.Id,
             UserId = order.UserId,
             TotalPrice = order.TotalPrice,
-            Status = order.Status,
+
+            Status = order.Status.ToString(),
+
             CreatedAt = order.CreatedAt,
 
             Items = order.Items

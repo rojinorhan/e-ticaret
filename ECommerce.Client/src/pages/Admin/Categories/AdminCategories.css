@@ -1,0 +1,253 @@
+
+.admin-page {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+
+/* ========================= */
+/* HEADER */
+/* ========================= */
+
+.admin-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 26px;
+}
+
+.admin-page-header span {
+    display: block;
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.admin-page-header h2 {
+    margin: 7px 0 5px;
+    font-size: 30px;
+    line-height: 1.2;
+    color: #111827;
+}
+
+.admin-page-header p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+
+/* ========================= */
+/* PRIMARY BUTTON */
+/* ========================= */
+
+.admin-primary-button {
+    border: none;
+    background: #2563eb;
+    color: white;
+    padding: 11px 17px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: 0.2s;
+}
+
+.admin-primary-button:hover {
+    background: #1d4ed8;
+}
+
+
+/* ========================= */
+/* CARD */
+/* ========================= */
+
+.admin-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+
+/* ========================= */
+/* CARD HEADER */
+/* ========================= */
+
+.admin-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-card-header h3 {
+    margin: 0;
+    font-size: 17px;
+    color: #111827;
+}
+
+.admin-card-count {
+    margin-top: 4px;
+    color: #9ca3af !important;
+    font-size: 12px !important;
+    letter-spacing: 0 !important;
+}
+
+
+/* ========================= */
+/* TABLE */
+/* ========================= */
+
+.admin-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th {
+    padding: 13px 20px;
+    background: #f9fafb;
+    color: #6b7280;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.admin-table td {
+    padding: 16px 20px;
+    border-top: 1px solid #f0f1f3;
+    color: #4b5563;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+.admin-table tbody tr:hover {
+    background: #fafafa;
+}
+
+.admin-table td strong {
+    color: #111827;
+    font-weight: 600;
+}
+
+
+/* ========================= */
+/* ACTIONS */
+/* ========================= */
+
+.admin-actions {
+    display: flex;
+    gap: 7px;
+}
+
+.admin-edit-button,
+.admin-delete-button {
+    border: none;
+    padding: 7px 11px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.admin-edit-button {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.admin-edit-button:hover {
+    background: #dbeafe;
+}
+
+.admin-delete-button {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.admin-delete-button:hover {
+    background: #fee2e2;
+}
+
+
+/* ========================= */
+/* LOADING */
+/* ========================= */
+
+.admin-loading {
+    min-height: 220px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+
+/* ========================= */
+/* EMPTY */
+/* ========================= */
+
+.admin-empty {
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+}
+
+.admin-empty-icon {
+    font-size: 38px;
+    margin-bottom: 5px;
+}
+
+.admin-empty strong {
+    color: #374151;
+    font-size: 15px;
+}
+
+.admin-empty span {
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+
+/* ========================= */
+/* MOBILE */
+/* ========================= */
+
+@media (max-width: 700px) {
+
+    .admin-page-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .admin-primary-button {
+        width: 100%;
+    }
+
+    .admin-card-header {
+        padding: 17px;
+    }
+
+    .admin-table th,
+    .admin-table td {
+        padding: 12px 14px;
+    }
+
+}

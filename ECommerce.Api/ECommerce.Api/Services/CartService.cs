@@ -261,6 +261,7 @@ public class CartService : ICartService
                     ProductId = item.ProductId,
                     ProductName = item.Product.Name,
                     Quantity = item.Quantity,
+                    Stock = item.Product.Stock,
                     UnitPrice = item.UnitPrice,
                     TotalPrice =
                         item.Quantity * item.UnitPrice

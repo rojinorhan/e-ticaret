@@ -20,9 +20,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<Cart> Carts => Set<Cart>();
 
     public DbSet<CartItem> CartItems => Set<CartItem>();
-
+    public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Order> Orders => Set<Order>();
-
+    public DbSet<Favorite> Favorites { get; set; }
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<EmailVerificationCode> EmailVerificationCodes =>
         Set<EmailVerificationCode>();

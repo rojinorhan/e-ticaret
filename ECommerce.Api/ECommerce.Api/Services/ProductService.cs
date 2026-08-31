@@ -195,4 +195,95 @@ public class ProductService : IProductService
 
         return true;
     }
+    
+public async Task<List<ProductDto>> FilterAsync(
+    string? search,
+    int? categoryId,
+    decimal? minPrice,
+    decimal? maxPrice,
+    string? sort,
+    CancellationToken cancellationToken)
+{
+    var query = _context.Products
+        .AsNoTracking()
+        .Include(p => p.Category)
+        .AsQueryable();
+
+
+    if (!string.IsNullOrWhiteSpace(search))
+    {
+        search = search.Trim();
+
+        query = query.Where(p =>
+            p.Name.Contains(search) ||
+            (p.Description != null &&
+             p.Description.Contains(search)));
+    }
+
+    if (categoryId.HasValue)
+    {
+        query = query.Where(p =>
+            p.CategoryId == categoryId.Value);
+    }
+
+    if (minPrice.HasValue)
+    {
+        query = query.Where(p =>
+            p.Price >= minPrice.Value);
+    }
+
+  
+    if (maxPrice.HasValue)
+    {
+        query = query.Where(p =>
+            p.Price <= maxPrice.Value);
+    }
+
+
+    var products = await query
+        .Select(p => new ProductDto
+        {
+            Id = p.Id,
+            Name = p.Name,
+            Description = p.Description,
+            Price = p.Price,
+            Stock = p.Stock,
+            CategoryId = p.CategoryId,
+            CategoryName = p.Category.Name,
+            CreatedAt = p.CreatedAt
+        })
+        .ToListAsync(cancellationToken);
+
+
+    products = sort switch
+    {
+        "priceAsc" =>
+            products
+                .OrderBy(p => p.Price)
+                .ToList(),
+
+        "priceDesc" =>
+            products
+                .OrderByDescending(p => p.Price)
+                .ToList(),
+
+        "nameAsc" =>
+            products
+                .OrderBy(p => p.Name)
+                .ToList(),
+
+        "nameDesc" =>
+            products
+                .OrderByDescending(p => p.Name)
+                .ToList(),
+
+        _ =>
+            products
+                .OrderByDescending(p => p.Id)
+                .ToList()
+    };
+
+    return products;
+}
+
 }

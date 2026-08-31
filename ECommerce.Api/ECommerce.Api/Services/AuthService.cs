@@ -222,53 +222,64 @@ public class AuthService : IAuthService
     return "Şifre sıfırlama kodu email adresinize gönderildi.";
 }
 
-public async Task<string> ResetPasswordAsync(
-    ResetPasswordDto dto,
-    CancellationToken cancellationToken)
-{
-    var user = await _context.Users
-        .FirstOrDefaultAsync(
-            u => u.Email == dto.Email,
+    public async Task<string> ResetPasswordAsync(
+        ResetPasswordDto dto,
+        CancellationToken cancellationToken)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(
+                u => u.Email == dto.Email,
+                cancellationToken);
+
+        if (user is null)
+        {
+            throw new UnauthorizedAccessException(
+                "Geçersiz doğrulama kodu.");
+        }
+
+        var verificationCode = await _context.EmailVerificationCodes
+            .Where(x =>
+                x.UserId == user.Id &&
+                x.Code == dto.Code &&
+                !x.IsUsed)
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync(
+                cancellationToken);
+
+        if (verificationCode is null)
+        {
+            throw new UnauthorizedAccessException(
+                "Geçersiz doğrulama kodu.");
+        }
+
+        if (verificationCode.ExpiresAt < DateTime.UtcNow)
+        {
+            throw new UnauthorizedAccessException(
+                "Doğrulama kodunun süresi dolmuş.");
+        }
+
+        // Yeni şifre eski şifre ile aynı mı?
+        var samePassword = BCrypt.Net.BCrypt.Verify(
+            dto.NewPassword,
+            user.PasswordHash);
+
+        if (samePassword)
+        {
+            throw new InvalidOperationException(
+                "Yeni şifreniz mevcut şifreniz ile aynı olamaz.");
+        }
+
+        // Yeni şifreyi kaydet
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(
+            dto.NewPassword);
+
+        verificationCode.IsUsed = true;
+
+        await _context.SaveChangesAsync(
             cancellationToken);
 
-    if (user is null)
-    {
-        throw new UnauthorizedAccessException(
-            "Geçersiz doğrulama kodu.");
+        return "Şifreniz başarıyla değiştirildi.";
     }
-
-    var verificationCode = await _context.EmailVerificationCodes
-        .Where(x =>
-            x.UserId == user.Id &&
-            x.Code == dto.Code &&
-            !x.IsUsed)
-        .OrderByDescending(x => x.CreatedAt)
-        .FirstOrDefaultAsync(
-            cancellationToken);
-
-    if (verificationCode is null)
-    {
-        throw new UnauthorizedAccessException(
-            "Geçersiz doğrulama kodu.");
-    }
-
-    if (verificationCode.ExpiresAt < DateTime.UtcNow)
-    {
-        throw new UnauthorizedAccessException(
-            "Doğrulama kodunun süresi dolmuş.");
-    }
-
-    user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(
-        dto.NewPassword);
-
-    verificationCode.IsUsed = true;
-
-    await _context.SaveChangesAsync(
-        cancellationToken);
-
-    return "Şifreniz başarıyla değiştirildi.";
-}
-    
     private string GenerateToken(User user)
     {
         var jwtSettings = _configuration

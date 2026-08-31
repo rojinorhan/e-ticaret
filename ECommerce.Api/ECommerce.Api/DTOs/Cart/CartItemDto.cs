@@ -10,6 +10,8 @@ public class CartItemDto
 
     public int Quantity { get; set; }
 
+    public int Stock { get; set; }
+
     public decimal UnitPrice { get; set; }
 
     public decimal TotalPrice { get; set; }

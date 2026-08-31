@@ -9,27 +9,37 @@ public static class AdminSeeder
         ApplicationDbContext context,
         CancellationToken cancellationToken)
     {
-        var adminExists = await context.Users
-            .AnyAsync(
-                u => u.Role == "Admin",
+        const string adminEmail = "rojinorhan.39@gmail.com";
+        const string adminPassword = "Admin12";
+
+        var admin = await context.Users
+            .FirstOrDefaultAsync(
+                u => u.Email == adminEmail,
                 cancellationToken);
 
-        if (adminExists)
+        if (admin is null)
         {
-            return;
+            admin = new User
+            {
+                FirstName = "System",
+                LastName = "Admin",
+                Email = adminEmail,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(
+                    adminPassword),
+                Role = "Admin"
+            };
+
+            context.Users.Add(admin);
         }
-
-        var admin = new User
+        else
         {
-            FirstName = "System",
-            LastName = "Admin",
-            Email = "admin@ecommerce.com",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(
-                "Admin123!"),
-            Role = "Admin"
-        };
+            admin.FirstName = "System";
+            admin.LastName = "Admin";
+            admin.Role = "Admin";
 
-        context.Users.Add(admin);
+            admin.PasswordHash =
+                BCrypt.Net.BCrypt.HashPassword(adminPassword);
+        }
 
         await context.SaveChangesAsync(
             cancellationToken);

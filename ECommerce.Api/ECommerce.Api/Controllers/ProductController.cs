@@ -79,4 +79,23 @@ public class ProductController : ControllerBase
 
         return NoContent();
     }
+    [HttpGet("filter")]
+    public async Task<IActionResult> Filter(
+        [FromQuery] string? search,
+        [FromQuery] int? categoryId,
+        [FromQuery] decimal? minPrice,
+        [FromQuery] decimal? maxPrice,
+        [FromQuery] string? sort,
+        CancellationToken cancellationToken)
+    {
+        var products = await _productService.FilterAsync(
+            search,
+            categoryId,
+            minPrice,
+            maxPrice,
+            sort,
+            cancellationToken);
+
+        return Ok(products);
+    }
 }

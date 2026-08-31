@@ -10,6 +10,13 @@ public interface IProductService
     Task<ProductDto?> GetByIdAsync(
         int id,
         CancellationToken cancellationToken);
+    Task<List<ProductDto>> FilterAsync(
+        string? search,
+        int? categoryId,
+        decimal? minPrice,
+        decimal? maxPrice,
+        string? sort,
+        CancellationToken cancellationToken);
 
     Task<ProductDto> CreateAsync(
         CreateProductDto dto,
