@@ -16,6 +16,7 @@ import Orders from "./pages/Orders/Orders";
 import OrderDetail from "./pages/OrderDetail/OrderDetail";
 import Profile from "./pages/Profile/Profile";
 import Favorites from "./pages/Favorites/Favorites";
+import Payment from "./pages/Payment/Payment";
 // Admin
 import ProtectedRoute from "./pages/Admin/ProtectedRoute";
 import AdminLayout from "./pages/Admin/AdminLayout";
@@ -43,6 +44,10 @@ function App() {
                 <Route
                     path="/register"
                     element={<Register />}
+                />
+                <Route
+                    path="/payment/:orderId"
+                    element={<Payment />}
                 />
 
                 <Route

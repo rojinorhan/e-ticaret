@@ -47,7 +47,6 @@ function Cart() {
                 return;
             }
 
-
             const errorMessage =
                 error.response?.data?.message ||
                 "Sepet yüklenirken bir hata oluştu.";
@@ -122,6 +121,7 @@ function Cart() {
             item.stock !== undefined &&
             quantity > item.stock
         ) {
+
             Swal.fire({
                 icon: "warning",
                 title: "Stok Yetersiz",
@@ -186,6 +186,7 @@ function Cart() {
         }
     };
 
+
     // =========================
     // ÜRÜN SİL
     // =========================
@@ -195,7 +196,6 @@ function Cart() {
             (item) => item.id === itemId
         );
 
-
         const result = await Swal.fire({
 
             icon: "warning",
@@ -203,13 +203,13 @@ function Cart() {
             title: "Ürün kaldırılsın mı?",
 
             html: `
-<p>
-<strong>
-${item?.productName || "Bu ürün"}
-</strong>
-sepetten kaldırılacak.
-</p>
-`,
+                <p>
+                    <strong>
+                        ${item?.productName || "Bu ürün"}
+                    </strong>
+                    sepetten kaldırılacak.
+                </p>
+            `,
 
             showCancelButton: true,
 
@@ -237,9 +237,7 @@ sepetten kaldırılacak.
                 `/Cart/items/${itemId}`
             );
 
-
             await getCart();
-
 
             Swal.fire({
 
@@ -262,7 +260,6 @@ sepetten kaldırılacak.
                 error
             );
 
-
             if (error.response?.status === 401) {
 
                 localStorage.removeItem("token");
@@ -278,7 +275,6 @@ sepetten kaldırılacak.
                 navigate("/");
                 return;
             }
-
 
             const errorMessage =
                 error.response?.data?.message ||
@@ -337,7 +333,6 @@ sepetten kaldırılacak.
 
             await getCart();
 
-
             Swal.fire({
 
                 icon: "success",
@@ -359,7 +354,6 @@ sepetten kaldırılacak.
                 error
             );
 
-
             if (error.response?.status === 401) {
 
                 localStorage.removeItem("token");
@@ -375,7 +369,6 @@ sepetten kaldırılacak.
                 navigate("/");
                 return;
             }
-
 
             const errorMessage =
                 error.response?.data?.message ||
@@ -400,9 +393,10 @@ sepetten kaldırılacak.
     // =========================
     const createOrder = async () => {
 
+        // Sepet boş mu?
         if (!cart?.items || cart.items.length === 0) {
 
-            Swal.fire({
+            await Swal.fire({
                 icon: "warning",
                 title: "Sepetiniz Boş",
                 text: "Sipariş oluşturabilmek için sepetinize ürün eklemelisiniz.",
@@ -414,6 +408,7 @@ sepetten kaldırılacak.
         }
 
 
+        // Sipariş onayı
         const result = await Swal.fire({
 
             icon: "question",
@@ -421,26 +416,28 @@ sepetten kaldırılacak.
             title: "Sipariş oluşturulsun mu?",
 
             html: `
-<div style="font-size: 15px;">
-    <p>
-    ${getTotalQuantity()} ürün
-sipariş verilecek.
-</p>
+                <div style="font-size: 15px;">
 
-<p>
-    Toplam:
-    <strong>
-        ${getTotal().toLocaleString(
-        "tr-TR",
-        {
-            style: "currency",
-            currency: "TRY"
-        }
-    )}
-    </strong>
-</p>
-</div>
-`,
+                    <p>
+                        ${getTotalQuantity()} ürün
+                        sipariş verilecek.
+                    </p>
+
+                    <p>
+                        Toplam:
+                        <strong>
+                            ${getTotal().toLocaleString(
+                "tr-TR",
+                {
+                    style: "currency",
+                    currency: "TRY"
+                }
+            )}
+                        </strong>
+                    </p>
+
+                </div>
+            `,
 
             showCancelButton: true,
 
@@ -465,7 +462,7 @@ sipariş verilecek.
             setError("");
 
 
-            // Yükleniyor mesajı
+            // Sipariş oluşturuluyor
             Swal.fire({
 
                 title: "Siparişiniz oluşturuluyor...",
@@ -485,18 +482,24 @@ sipariş verilecek.
             });
 
 
-            const response = await api.post(
-                "/Order"
-            );
+            // =========================
+            // BACKEND'DEN SİPARİŞ OLUŞTUR
+            // =========================
+            const response = await api.post("/Order");
 
 
             const order = response.data;
 
 
+            console.log("Oluşturulan sipariş:", order);
+
+
             Swal.close();
 
 
-            // BAŞARILI
+            // =========================
+            // SİPARİŞ OLUŞTURULDU
+            // =========================
             await Swal.fire({
 
                 icon: "success",
@@ -504,28 +507,41 @@ sipariş verilecek.
                 title: "Siparişiniz Oluşturuldu!",
 
                 html: `
-<p>
-Siparişiniz başarıyla oluşturuldu.
-</p>
+                    <p>
+                        Siparişiniz başarıyla oluşturuldu.
+                    </p>
 
-<p>
-    Sipariş No:
-    <strong>
-        #${order.id}
-    </strong>
-</p>
-    `,
+                    <p>
+                        Sipariş No:
+                        <strong>
+                            #${order.id}
+                        </strong>
+                    </p>
 
-                confirmButtonText: "Sipariş Detayını Gör",
+                    <p style="color:#64748b; font-size:13px;">
+                        Şimdi ödeme adımına geçebilirsiniz.
+                    </p>
+                `,
 
-                confirmButtonColor: "#4f46e5"
+                confirmButtonText: "Ödemeye Geç →",
+
+                confirmButtonColor: "#4f46e5",
+
+                allowOutsideClick: false
 
             });
 
 
-            navigate(
-                `/orders/${order.id}`
+            // =========================
+            // ÖDEME SAYFASINA GİT
+            // =========================
+            console.log(
+                "Payment sayfasına gidiliyor:",
+                `/payment/${order.id}`
             );
+
+            navigate(`/payment/${order.id}`);
+
 
         } catch (error) {
 
@@ -543,26 +559,35 @@ Siparişiniz başarıyla oluşturuldu.
                 localStorage.removeItem("token");
 
                 await Swal.fire({
+
                     icon: "warning",
+
                     title: "Oturum Gerekli",
+
                     text: "Sipariş oluşturmak için giriş yapmanız gerekiyor.",
+
                     confirmButtonText: "Giriş Yap",
+
                     confirmButtonColor: "#4f46e5"
+
                 });
 
                 navigate("/");
+
                 return;
             }
 
 
             const errorMessage =
                 error.response?.data?.message ||
+                error.response?.data?.title ||
                 "Sipariş oluşturulurken bir hata oluştu.";
+
 
             setError(errorMessage);
 
 
-            Swal.fire({
+            await Swal.fire({
 
                 icon: "error",
 
@@ -613,11 +638,9 @@ Siparişiniz başarıyla oluşturuldu.
 
         <div className="cart-page">
 
-
             {/* HEADER */}
 
             <header className="cart-header">
-
 
                 <div
                     className="cart-logo"
@@ -636,7 +659,6 @@ Siparişiniz başarıyla oluşturuldu.
 
 
                 <nav className="cart-nav">
-
 
                     <button
                         onClick={() => navigate("/home")}
@@ -665,7 +687,6 @@ Siparişiniz başarıyla oluşturuldu.
                         🛒 Sepet
                     </button>
 
-
                 </nav>
 
             </header>
@@ -675,11 +696,9 @@ Siparişiniz başarıyla oluşturuldu.
 
             <main className="cart-container">
 
-
                 {/* TITLE */}
 
                 <div className="cart-title">
-
 
                     <div>
 
@@ -687,11 +706,9 @@ Siparişiniz başarıyla oluşturuldu.
                             ALIŞVERİŞ SEPETİ
                         </span>
 
-
                         <h1>
                             Sepetim
                         </h1>
-
 
                         {cart?.items?.length > 0 && (
 
@@ -744,22 +761,18 @@ Siparişiniz başarıyla oluşturuldu.
 
                     <div className="empty-cart">
 
-
                         <div className="empty-cart-icon">
                             🛒
                         </div>
-
 
                         <h2>
                             Sepetiniz boş
                         </h2>
 
-
                         <p>
                             Henüz sepetinize ürün eklemediniz.
                             Ürünleri keşfederek alışverişe başlayabilirsiniz.
                         </p>
-
 
                         <button
                             onClick={() =>
@@ -769,20 +782,15 @@ Siparişiniz başarıyla oluşturuldu.
                             🛍️ Ürünleri Keşfet
                         </button>
 
-
                     </div>
 
                 ) : (
 
-                    /* DOLU SEPET */
-
                     <div className="cart-content">
-
 
                         {/* PRODUCTS */}
 
                         <section className="cart-items">
-
 
                             {cart.items.map((item) => (
 
@@ -791,26 +799,18 @@ Siparişiniz başarıyla oluşturuldu.
                                     key={item.id}
                                 >
 
-
-                                    {/* PRODUCT ICON */}
-
                                     <div className="product-icon">
                                         🛍️
                                     </div>
 
 
-                                    {/* PRODUCT INFO */}
-
                                     <div className="product-info">
-
 
                                         <h3>
                                             {item.productName}
                                         </h3>
 
-
                                         <span>
-
                                             Birim fiyat:{" "}
 
                                             {Number(
@@ -825,14 +825,10 @@ Siparişiniz başarıyla oluşturuldu.
 
                                         </span>
 
-
                                     </div>
 
 
-                                    {/* QUANTITY */}
-
                                     <div className="quantity-control">
-
 
                                         <button
                                             onClick={() =>
@@ -868,11 +864,8 @@ Siparişiniz başarıyla oluşturuldu.
                                             +
                                         </button>
 
-
                                     </div>
 
-
-                                    {/* TOTAL */}
 
                                     <div className="item-total">
 
@@ -889,25 +882,19 @@ Siparişiniz başarıyla oluşturuldu.
                                     </div>
 
 
-                                    {/* DELETE */}
-
                                     <button
                                         className="remove-item"
                                         onClick={() =>
-                                            removeItem(
-                                                item.id
-                                            )
+                                            removeItem(item.id)
                                         }
                                         title="Ürünü kaldır"
                                     >
                                         🗑️
                                     </button>
 
-
                                 </article>
 
                             ))}
-
 
                         </section>
 
@@ -915,7 +902,6 @@ Siparişiniz başarıyla oluşturuldu.
                         {/* SUMMARY */}
 
                         <aside className="cart-summary">
-
 
                             <h2>
                                 Sipariş Özeti
@@ -998,9 +984,11 @@ Siparişiniz başarıyla oluşturuldu.
                                 onClick={createOrder}
                             >
                                 Sipariş Ver
+
                                 <span>
                                     →
                                 </span>
+
                             </button>
 
 
@@ -1013,9 +1001,7 @@ Siparişiniz başarıyla oluşturuldu.
                                 ← Alışverişe Devam Et
                             </button>
 
-
                         </aside>
-
 
                     </div>
 
@@ -1029,4 +1015,3 @@ Siparişiniz başarıyla oluşturuldu.
 }
 
 export default Cart;
-

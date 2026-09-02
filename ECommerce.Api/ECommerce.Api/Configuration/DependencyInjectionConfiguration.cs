@@ -20,7 +20,7 @@ public static class DependencyInjectionConfiguration
         services.AddScoped<IUserContext, UserContext>();
         services.AddScoped<IFavoriteService, FavoriteService>();
         services.AddScoped<IReviewService, ReviewService>();
-        
+        services.AddScoped<IPaymentService, PaymentService>();
         return services;
     }
 }

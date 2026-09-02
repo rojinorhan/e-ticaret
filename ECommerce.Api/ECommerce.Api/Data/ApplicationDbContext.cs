@@ -18,7 +18,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Product> Products => Set<Product>();
 
     public DbSet<Cart> Carts => Set<Cart>();
-
+    public DbSet<Payment> Payments { get; set; }
     public DbSet<CartItem> CartItems => Set<CartItem>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Order> Orders => Set<Order>();
