@@ -495,43 +495,6 @@ function Cart() {
 
 
             Swal.close();
-
-
-            // =========================
-            // SİPARİŞ OLUŞTURULDU
-            // =========================
-            await Swal.fire({
-
-                icon: "success",
-
-                title: "Siparişiniz Oluşturuldu!",
-
-                html: `
-                    <p>
-                        Siparişiniz başarıyla oluşturuldu.
-                    </p>
-
-                    <p>
-                        Sipariş No:
-                        <strong>
-                            #${order.id}
-                        </strong>
-                    </p>
-
-                    <p style="color:#64748b; font-size:13px;">
-                        Şimdi ödeme adımına geçebilirsiniz.
-                    </p>
-                `,
-
-                confirmButtonText: "Ödemeye Geç →",
-
-                confirmButtonColor: "#4f46e5",
-
-                allowOutsideClick: false
-
-            });
-
-
             // =========================
             // ÖDEME SAYFASINA GİT
             // =========================
@@ -539,9 +502,14 @@ function Cart() {
                 "Payment sayfasına gidiliyor:",
                 `/payment/${order.id}`
             );
-
             navigate(`/payment/${order.id}`);
+            // =========================
+            // SİPARİŞ OLUŞTURULDU
+            // =========================
+            
 
+        
+            
 
         } catch (error) {
 
@@ -652,7 +620,7 @@ function Cart() {
                     </span>
 
                     <strong>
-                        E-Commerce
+                        E-Commerce 
                     </strong>
 
                 </div>
@@ -1015,3 +983,8 @@ function Cart() {
 }
 
 export default Cart;
+
+
+
+
+//vscode test 12345
