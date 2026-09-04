@@ -5,9 +5,6 @@ namespace ECommerce.Api.Interfaces;
 
 public interface IOrderService
 {
-    Task<OrderDto> CreateAsync(
-        CancellationToken cancellationToken);
-
     Task<List<OrderDto>> GetUserOrdersAsync(
         CancellationToken cancellationToken);
 

@@ -17,15 +17,6 @@ public class OrderController : ControllerBase
         _orderService = orderService;
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Create(
-        CancellationToken cancellationToken)
-    {
-        return Ok(
-            await _orderService.CreateAsync(
-                cancellationToken));
-    }
-
     [HttpGet]
     public async Task<IActionResult> GetMyOrders(
         CancellationToken cancellationToken)

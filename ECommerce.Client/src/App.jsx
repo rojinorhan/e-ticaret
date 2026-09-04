@@ -6,6 +6,7 @@ import Register from "./pages/Register/Register";
 import Verify from "./pages/Verify/Verify";
 import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword/ResetPassword";
+import Coupons from "./pages/Admin/Coupons/Coupons";
 
 // User
 import Home from "./pages/Home/Home";
@@ -46,7 +47,7 @@ function App() {
                     element={<Register />}
                 />
                 <Route
-                    path="/payment/:orderId"
+                    path="/payment"
                     element={<Payment />}
                 />
 
@@ -125,7 +126,7 @@ function App() {
                             path="products"
                             element={<AdminProducts />}
                         />
-
+                        <Route path="coupons" element={<Coupons />} />
                         <Route
                             path="categories"
                             element={<AdminCategories />}

@@ -5,81 +5,61 @@ import Swal from "sweetalert2";
 import api from "../../services/api";
 
 function Cart() {
-
     const navigate = useNavigate();
 
     const [cart, setCart] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
+    const [couponCode, setCouponCode] = useState("");
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [couponLoading, setCouponLoading] = useState(false);
+
+    useEffect(() => {
+        getCart();
+    }, []);
 
     // =========================
     // SEPETİ GETİR
     // =========================
     const getCart = async () => {
-
         try {
-
             setLoading(true);
             setError("");
 
             const response = await api.get("/Cart");
 
             setCart(response.data);
+        } catch (err) {
+            console.error("Sepet alınamadı:", err);
 
-        } catch (error) {
-
-            console.error("Sepet hatası:", error);
-
-            if (error.response?.status === 401) {
-
-                localStorage.removeItem("token");
-
+            if (err.response?.status === 401) {
                 await Swal.fire({
                     icon: "warning",
                     title: "Oturum Gerekli",
-                    text: "Sepetinizi görmek için giriş yapmanız gerekiyor.",
+                    text: "Sepetinizi görüntülemek için giriş yapmalısınız.",
                     confirmButtonText: "Giriş Yap",
                     confirmButtonColor: "#4f46e5"
                 });
 
-                navigate("/");
+                navigate("/login");
                 return;
             }
 
-            const errorMessage =
-                error.response?.data?.message ||
-                "Sepet yüklenirken bir hata oluştu.";
-
-            setError(errorMessage);
-
-            Swal.fire({
-                icon: "error",
-                title: "Sepet Yüklenemedi",
-                text: errorMessage,
-                confirmButtonText: "Tamam",
-                confirmButtonColor: "#4f46e5"
-            });
-
+            setError(
+                err.response?.data?.message ||
+                "Sepet yüklenirken bir hata oluştu."
+            );
         } finally {
-
             setLoading(false);
-
         }
     };
 
-
-    useEffect(() => {
-        getCart();
-    }, []);
-
-
     // =========================
-    // TOPLAM FİYAT
+    // TOPLAM TUTAR
     // =========================
     const getTotal = () => {
-
-        if (!cart?.items || cart.items.length === 0) {
+        if (!cart?.items) {
             return 0;
         }
 
@@ -90,13 +70,11 @@ function Cart() {
         );
     };
 
-
     // =========================
     // TOPLAM ÜRÜN ADEDİ
     // =========================
     const getTotalQuantity = () => {
-
-        if (!cart?.items || cart.items.length === 0) {
+        if (!cart?.items) {
             return 0;
         }
 
@@ -107,25 +85,31 @@ function Cart() {
         );
     };
 
-
     // =========================
-    // MİKTAR GÜNCELLE
+    // ÖDENECEK SON TUTAR
     // =========================
-    const updateQuantity = async (item, quantity) => {
-
-        if (quantity < 1) {
-            return;
+    const getFinalTotal = () => {
+        if (
+            appliedCoupon?.success &&
+            appliedCoupon?.finalAmount !== undefined
+        ) {
+            return Number(appliedCoupon.finalAmount);
         }
 
-        if (
-            item.stock !== undefined &&
-            quantity > item.stock
-        ) {
+        return getTotal();
+    };
 
-            Swal.fire({
+    // =========================
+    // KUPON UYGULA
+    // =========================
+    const applyCoupon = async () => {
+        const code = couponCode.trim();
+
+        if (!code) {
+            await Swal.fire({
                 icon: "warning",
-                title: "Stok Yetersiz",
-                text: `Bu ürün için en fazla ${item.stock} adet satın alabilirsiniz.`,
+                title: "Kupon Kodu Gerekli",
+                text: "Lütfen bir kupon kodu giriniz.",
                 confirmButtonText: "Tamam",
                 confirmButtonColor: "#4f46e5"
             });
@@ -134,857 +118,727 @@ function Cart() {
         }
 
         try {
+            setCouponLoading(true);
 
-            setError("");
-
-            const response = await api.put(
-                `/Cart/items/${item.id}`,
+            const response = await api.post(
+                "/Coupon/apply",
                 {
-                    quantity: quantity
+                    code: code
                 }
             );
 
-            setCart(response.data);
+            const result = response.data;
 
-        } catch (error) {
-
-            console.error(
-                "Miktar güncelleme hatası:",
-                error
-            );
-
-            if (error.response?.status === 401) {
-
-                localStorage.removeItem("token");
+            if (!result.success) {
+                setAppliedCoupon(null);
 
                 await Swal.fire({
-                    icon: "warning",
-                    title: "Oturum Gerekli",
-                    text: "Bu işlemi yapmak için giriş yapmanız gerekiyor.",
-                    confirmButtonText: "Giriş Yap",
+                    icon: "error",
+                    title: "Kupon Uygulanamadı",
+                    text:
+                        result.message ||
+                        "Kupon uygulanırken bir hata oluştu.",
+                    confirmButtonText: "Tamam",
                     confirmButtonColor: "#4f46e5"
                 });
 
-                navigate("/");
                 return;
             }
 
-            const errorMessage =
-                error.response?.data?.message ||
-                error.response?.data?.title ||
-                "Ürün miktarı güncellenemedi.";
+            setAppliedCoupon(result);
 
-            setError(errorMessage);
-
-            Swal.fire({
-                icon: "error",
-                title: "Güncelleme Başarısız",
-                text: errorMessage,
+            await Swal.fire({
+                icon: "success",
+                title: "Kupon Uygulandı",
+                text:
+                    result.message ||
+                    "Kupon başarıyla uygulandı.",
                 confirmButtonText: "Tamam",
-                confirmButtonColor: "#4f46e5"
+                confirmButtonColor: "#16a34a"
+            });
+        } catch (err) {
+            console.error("Kupon uygulanamadı:", err);
+
+            setAppliedCoupon(null);
+
+            await Swal.fire({
+                icon: "error",
+                title: "Hata",
+                text:
+                    err.response?.data?.message ||
+                    err.response?.data?.Message ||
+                    "Kupon uygulanırken bir hata oluştu.",
+                confirmButtonText: "Tamam",
+                confirmButtonColor: "#dc2626"
+            });
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
+    // =========================
+    // KUPONU KALDIR
+    // =========================
+    const removeCoupon = async () => {
+        setAppliedCoupon(null);
+        setCouponCode("");
+
+        await Swal.fire({
+            icon: "info",
+            title: "Kupon Kaldırıldı",
+            text: "Kupon indirimi sepetinizden kaldırıldı.",
+            confirmButtonText: "Tamam",
+            confirmButtonColor: "#4f46e5"
+        });
+    };
+
+    // =========================
+    // ADET GÜNCELLE
+    // =========================
+    const updateQuantity = async (itemId, newQuantity) => {
+        if (newQuantity < 1) {
+            return;
+        }
+
+        try {
+            await api.put(
+                `/Cart/items/${itemId}`,
+                {
+                    quantity: newQuantity
+                }
+            );
+
+            setAppliedCoupon(null);
+
+            await getCart();
+        } catch (err) {
+            console.error(
+                "Ürün adedi güncellenemedi:",
+                err
+            );
+
+            await Swal.fire({
+                icon: "error",
+                title: "İşlem Başarısız",
+                text:
+                    err.response?.data?.message ||
+                    err.response?.data?.Message ||
+                    "Ürün adedi güncellenemedi.",
+                confirmButtonText: "Tamam",
+                confirmButtonColor: "#dc2626"
             });
         }
     };
 
-
     // =========================
-    // ÜRÜN SİL
+    // ÜRÜNÜ SEPETTEN SİL
     // =========================
     const removeItem = async (itemId) => {
-
-        const item = cart?.items?.find(
-            (item) => item.id === itemId
-        );
-
         const result = await Swal.fire({
-
             icon: "warning",
-
-            title: "Ürün kaldırılsın mı?",
-
-            html: `
-                <p>
-                    <strong>
-                        ${item?.productName || "Bu ürün"}
-                    </strong>
-                    sepetten kaldırılacak.
-                </p>
-            `,
-
+            title: "Ürün Kaldırılsın mı?",
+            text: "Bu ürün sepetinizden kaldırılacak.",
             showCancelButton: true,
-
             confirmButtonText: "Evet, Kaldır",
-
             cancelButtonText: "Vazgeç",
-
             confirmButtonColor: "#dc2626",
-
             cancelButtonColor: "#64748b"
-
         });
-
 
         if (!result.isConfirmed) {
             return;
         }
 
-
         try {
-
-            setError("");
-
             await api.delete(
                 `/Cart/items/${itemId}`
             );
 
+            setAppliedCoupon(null);
+
             await getCart();
 
-            Swal.fire({
-
+            await Swal.fire({
                 icon: "success",
-
                 title: "Ürün Kaldırıldı",
-
-                text: "Ürün sepetten başarıyla kaldırıldı.",
-
-                timer: 1500,
-
-                showConfirmButton: false
-
+                text: "Ürün sepetinizden kaldırıldı.",
+                confirmButtonText: "Tamam",
+                confirmButtonColor: "#16a34a"
             });
-
-        } catch (error) {
-
+        } catch (err) {
             console.error(
-                "Ürün silme hatası:",
-                error
+                "Ürün silinemedi:",
+                err
             );
 
-            if (error.response?.status === 401) {
-
-                localStorage.removeItem("token");
-
-                await Swal.fire({
-                    icon: "warning",
-                    title: "Oturum Gerekli",
-                    text: "Bu işlemi yapmak için giriş yapmanız gerekiyor.",
-                    confirmButtonText: "Giriş Yap",
-                    confirmButtonColor: "#4f46e5"
-                });
-
-                navigate("/");
-                return;
-            }
-
-            const errorMessage =
-                error.response?.data?.message ||
-                "Ürün sepetten silinemedi.";
-
-            setError(errorMessage);
-
-            Swal.fire({
+            await Swal.fire({
                 icon: "error",
-                title: "Ürün Kaldırılamadı",
-                text: errorMessage,
+                title: "Hata",
+                text:
+                    err.response?.data?.message ||
+                    err.response?.data?.Message ||
+                    "Ürün sepetten kaldırılırken hata oluştu.",
                 confirmButtonText: "Tamam",
-                confirmButtonColor: "#4f46e5"
+                confirmButtonColor: "#dc2626"
             });
-
         }
     };
-
 
     // =========================
     // SEPETİ TEMİZLE
     // =========================
     const clearCart = async () => {
-
         const result = await Swal.fire({
-
             icon: "warning",
-
-            title: "Sepeti temizlemek istiyor musunuz?",
-
-            text: "Sepetteki tüm ürünler kaldırılacak. Bu işlem geri alınamaz.",
-
+            title: "Sepet Temizlensin mi?",
+            text: "Sepetinizdeki tüm ürünler kaldırılacak.",
             showCancelButton: true,
-
-            confirmButtonText: "Evet, Sepeti Temizle",
-
+            confirmButtonText: "Evet, Temizle",
             cancelButtonText: "Vazgeç",
-
             confirmButtonColor: "#dc2626",
-
             cancelButtonColor: "#64748b"
-
         });
-
 
         if (!result.isConfirmed) {
             return;
         }
 
-
         try {
-
-            setError("");
-
             await api.delete("/Cart");
+
+            setAppliedCoupon(null);
+            setCouponCode("");
 
             await getCart();
 
-            Swal.fire({
-
+            await Swal.fire({
                 icon: "success",
-
                 title: "Sepet Temizlendi",
-
                 text: "Sepetiniz başarıyla temizlendi.",
-
-                timer: 1500,
-
-                showConfirmButton: false
-
+                confirmButtonText: "Tamam",
+                confirmButtonColor: "#16a34a"
             });
-
-        } catch (error) {
-
+        } catch (err) {
             console.error(
-                "Sepet temizleme hatası:",
-                error
+                "Sepet temizlenemedi:",
+                err
             );
 
-            if (error.response?.status === 401) {
-
-                localStorage.removeItem("token");
-
-                await Swal.fire({
-                    icon: "warning",
-                    title: "Oturum Gerekli",
-                    text: "Bu işlemi yapmak için giriş yapmanız gerekiyor.",
-                    confirmButtonText: "Giriş Yap",
-                    confirmButtonColor: "#4f46e5"
-                });
-
-                navigate("/");
-                return;
-            }
-
-            const errorMessage =
-                error.response?.data?.message ||
-                "Sepet temizlenemedi.";
-
-            setError(errorMessage);
-
-            Swal.fire({
+            await Swal.fire({
                 icon: "error",
-                title: "Sepet Temizlenemedi",
-                text: errorMessage,
+                title: "Hata",
+                text:
+                    err.response?.data?.message ||
+                    err.response?.data?.Message ||
+                    "Sepet temizlenirken bir hata oluştu.",
                 confirmButtonText: "Tamam",
-                confirmButtonColor: "#4f46e5"
+                confirmButtonColor: "#dc2626"
             });
-
         }
     };
 
-
     // =========================
-    // SİPARİŞ OLUŞTUR
+    // ÖDEMEYE GEÇ
     // =========================
     const createOrder = async () => {
-
-        // Sepet boş mu?
         if (!cart?.items || cart.items.length === 0) {
-
             await Swal.fire({
                 icon: "warning",
                 title: "Sepetiniz Boş",
-                text: "Sipariş oluşturabilmek için sepetinize ürün eklemelisiniz.",
+                text:
+                    "Ödeme işlemine geçebilmek için sepetinizde ürün bulunmalıdır.",
                 confirmButtonText: "Ürünleri Keşfet",
                 confirmButtonColor: "#4f46e5"
             });
 
+            navigate("/home");
             return;
         }
 
+        const finalTotal = getFinalTotal();
 
-        // Sipariş onayı
         const result = await Swal.fire({
-
             icon: "question",
-
-            title: "Sipariş oluşturulsun mu?",
-
+            title: "Ödemeye geçilsin mi?",
             html: `
-                <div style="font-size: 15px;">
+<div style="font-size:15px; line-height:1.8;">
+    <p>
+    <strong>${getTotalQuantity()}</strong>
+ürün için ödeme sayfasına yönlendirileceksiniz.
+</p>
 
-                    <p>
-                        ${getTotalQuantity()} ürün
-                        sipariş verilecek.
-                    </p>
+<p>
+    Ara Toplam:
+    <strong>
+        ${getTotal().toLocaleString(
+        "tr-TR",
+        {
+            style: "currency",
+            currency: "TRY"
+        }
+    )}
+    </strong>
+</p>
 
-                    <p>
-                        Toplam:
-                        <strong>
-                            ${getTotal().toLocaleString(
-                "tr-TR",
-                {
-                    style: "currency",
-                    currency: "TRY"
-                }
-            )}
-                        </strong>
-                    </p>
+${
+    appliedCoupon?.success
+        ? `
+                                <p style="color:#16a34a;">
+                                    Kupon İndirimi:
+                                    <strong>
+                                        -${Number(
+            appliedCoupon.discountAmount
+        ).toLocaleString(
+            "tr-TR",
+            {
+                style: "currency",
+                currency: "TRY"
+            }
+        )}
+                                    </strong>
+                                </p>
+                            `
+        : ""
+}
 
-                </div>
-            `,
+<p>
+    Ödenecek Tutar:
+    <strong>
+        ${finalTotal.toLocaleString(
+        "tr-TR",
+        {
+            style: "currency",
+            currency: "TRY"
+        }
+    )}
+    </strong>
+</p>
 
+<p style="font-size:13px; color:#64748b;">
+    Siparişiniz ödeme başarıyla tamamlandıktan sonra oluşturulacaktır.
+</p>
+</div>
+`,
             showCancelButton: true,
-
-            confirmButtonText: "Evet, Sipariş Ver",
-
+            confirmButtonText: "Ödemeye Geç",
             cancelButtonText: "Vazgeç",
-
             confirmButtonColor: "#4f46e5",
-
             cancelButtonColor: "#64748b"
-
         });
-
 
         if (!result.isConfirmed) {
             return;
         }
 
-
-        try {
-
-            setError("");
-
-
-            // Sipariş oluşturuluyor
-            Swal.fire({
-
-                title: "Siparişiniz oluşturuluyor...",
-
-                text: "Lütfen bekleyin.",
-
-                allowOutsideClick: false,
-
-                allowEscapeKey: false,
-
-                showConfirmButton: false,
-
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-
-            });
-
-
-            // =========================
-            // BACKEND'DEN SİPARİŞ OLUŞTUR
-            // =========================
-            const response = await api.post("/Order");
-
-
-            const order = response.data;
-
-
-            console.log("Oluşturulan sipariş:", order);
-
-
-            Swal.close();
-            // =========================
-            // ÖDEME SAYFASINA GİT
-            // =========================
-            console.log(
-                "Payment sayfasına gidiliyor:",
-                `/payment/${order.id}`
+        /*
+         * Kupon kodunu ödeme sayfasına taşımak için
+         * sessionStorage kullanıyoruz.
+         *
+         * ÖNEMLİ:
+         * Burada indirim tutarını göndermiyoruz.
+         * Sadece kupon kodunu gönderiyoruz.
+         *
+         * Backend ödeme sırasında kuponu tekrar
+         * kontrol edecek.
+         */
+        if (appliedCoupon?.success) {
+            sessionStorage.setItem(
+                "paymentCouponCode",
+                appliedCoupon.couponCode
             );
-            navigate(`/payment/${order.id}`);
-            // =========================
-            // SİPARİŞ OLUŞTURULDU
-            // =========================
-            
-
-        
-            
-
-        } catch (error) {
-
-            console.error(
-                "Sipariş oluşturma hatası:",
-                error
+        } else {
+            sessionStorage.removeItem(
+                "paymentCouponCode"
             );
-
-
-            Swal.close();
-
-
-            if (error.response?.status === 401) {
-
-                localStorage.removeItem("token");
-
-                await Swal.fire({
-
-                    icon: "warning",
-
-                    title: "Oturum Gerekli",
-
-                    text: "Sipariş oluşturmak için giriş yapmanız gerekiyor.",
-
-                    confirmButtonText: "Giriş Yap",
-
-                    confirmButtonColor: "#4f46e5"
-
-                });
-
-                navigate("/");
-
-                return;
-            }
-
-
-            const errorMessage =
-                error.response?.data?.message ||
-                error.response?.data?.title ||
-                "Sipariş oluşturulurken bir hata oluştu.";
-
-
-            setError(errorMessage);
-
-
-            await Swal.fire({
-
-                icon: "error",
-
-                title: "Sipariş Oluşturulamadı",
-
-                text: errorMessage,
-
-                confirmButtonText: "Tamam",
-
-                confirmButtonColor: "#4f46e5"
-
-            });
-
         }
+
+        /*
+         * Artık burada:
+         *
+         * api.post("/Order")
+         *
+         * YOK!
+         *
+         * Sipariş ödeme başarılı olduğunda
+         * backend tarafından oluşturulacak.
+         */
+        navigate("/payment");
     };
 
-
     // =========================
-    // LOADING
+    // YÜKLENİYOR
     // =========================
     if (loading) {
-
         return (
-
             <div className="cart-page">
-
                 <div className="cart-loading">
-
-                    <div className="cart-spinner"></div>
-
-                    <p>
-                        Sepetiniz yükleniyor...
-                    </p>
-
+                    <div className="loading-spinner"></div>
+                    <p>Sepetiniz yükleniyor...</p>
                 </div>
-
             </div>
-
         );
-
     }
 
+    // =========================
+    // HATA
+    // =========================
+    if (error) {
+        return (
+            <div className="cart-page">
+                <div className="cart-error">
+                    <h2>Bir hata oluştu</h2>
+                    <p>{error}</p>
+
+                    <button
+                        onClick={getCart}
+                        className="retry-button"
+                    >
+                        Tekrar Dene
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     // =========================
-    // SAYFA
+    // BOŞ SEPET
     // =========================
-    return (
+    if (!cart?.items || cart.items.length === 0) {
+        return (
+            <div className="cart-page">
+                <div className="cart-header">
+                    <h1>Sepetim</h1>
 
-        <div className="cart-page">
-
-            {/* HEADER */}
-
-            <header className="cart-header">
-
-                <div
-                    className="cart-logo"
-                    onClick={() => navigate("/home")}
-                >
-
-                    <span>
-                        🛒
-                    </span>
-
-                    <strong>
-                        E-Commerce 
-                    </strong>
-
+                    <button
+                        className="continue-shopping-button"
+                        onClick={() => navigate("/home")}
+                    >
+                        Alışverişe Devam Et
+                    </button>
                 </div>
 
+                <div className="empty-cart">
+                    <div className="empty-cart-icon">
+                        🛒
+                    </div>
 
-                <nav className="cart-nav">
+                    <h2>Sepetiniz Boş</h2>
+
+                    <p>
+                        Henüz sepetinize ürün eklemediniz.
+                    </p>
 
                     <button
                         onClick={() => navigate("/home")}
+                        className="start-shopping-button"
                     >
-                        Ana Sayfa
+                        Alışverişe Başla
                     </button>
+                </div>
+            </div>
+        );
+    }
 
+    // =========================
+    // ANA EKRAN
+    // =========================
+    return (
+        <div className="cart-page">
 
-                    <button
-                        onClick={() => navigate("/products")}
-                    >
-                        Ürünler
-                    </button>
+            {/* HEADER */}
+            <div className="cart-header">
+                <div>
+                    <h1>Sepetim</h1>
 
-
-                    <button
-                        onClick={() => navigate("/orders")}
-                    >
-                        Siparişlerim
-                    </button>
-
-
-                    <button
-                        className="active"
-                    >
-                        🛒 Sepet
-                    </button>
-
-                </nav>
-
-            </header>
-
-
-            {/* CONTENT */}
-
-            <main className="cart-container">
-
-                {/* TITLE */}
-
-                <div className="cart-title">
-
-                    <div>
-
-                        <span className="cart-title-label">
-                            ALIŞVERİŞ SEPETİ
-                        </span>
-
-                        <h1>
-                            Sepetim
-                        </h1>
-
-                        {cart?.items?.length > 0 && (
-
-                            <p>
-                                Sepetinizde{" "}
-                                {getTotalQuantity()} ürün
-                                bulunuyor.
-                            </p>
-
-                        )}
-
-                    </div>
-
-
-                    {cart?.items?.length > 0 && (
-
-                        <button
-                            className="clear-cart"
-                            onClick={clearCart}
-                        >
-                            🗑️ Sepeti Temizle
-                        </button>
-
-                    )}
-
+                    <p>
+                        {getTotalQuantity()} ürün
+                    </p>
                 </div>
 
+                <button
+                    className="continue-shopping-button"
+                    onClick={() => navigate("/home")}
+                >
+                    Alışverişe Devam Et
+                </button>
+            </div>
 
-                {/* ERROR */}
+            {/* ANA İÇERİK */}
+            <div className="cart-content">
 
-                {error && (
+                {/* ÜRÜNLER */}
+                <div className="cart-products">
 
-                    <div className="cart-error">
-
-                        <span>
-                            ⚠️
-                        </span>
-
-                        {error}
-
-                    </div>
-
-                )}
-
-
-                {/* EMPTY CART */}
-
-                {!cart?.items ||
-                cart.items.length === 0 ? (
-
-                    <div className="empty-cart">
-
-                        <div className="empty-cart-icon">
-                            🛒
-                        </div>
-
-                        <h2>
-                            Sepetiniz boş
-                        </h2>
-
-                        <p>
-                            Henüz sepetinize ürün eklemediniz.
-                            Ürünleri keşfederek alışverişe başlayabilirsiniz.
-                        </p>
+                    <div className="cart-products-header">
+                        <h2>Sepetinizdeki Ürünler</h2>
 
                         <button
-                            onClick={() =>
-                                navigate("/products")
-                            }
+                            className="clear-cart-button"
+                            onClick={clearCart}
                         >
-                            🛍️ Ürünleri Keşfet
+                            Sepeti Temizle
                         </button>
-
                     </div>
 
-                ) : (
+                    {cart.items.map((item) => (
+                        <div
+                            className="cart-item"
+                            key={item.id}
+                        >
 
-                    <div className="cart-content">
+                            {/* ÜRÜN RESMİ */}
+                            <div className="cart-item-image">
+                                {item.product?.imageUrl ? (
+                                    <img
+                                        src={item.product.imageUrl}
+                                        alt={
+                                            item.product.name ||
+                                            "Ürün"
+                                        }
+                                    />
+                                ) : (
+                                    <div className="no-image">
+                                        📦
+                                    </div>
+                                )}
+                            </div>
 
-                        {/* PRODUCTS */}
+                            {/* ÜRÜN BİLGİSİ */}
+                            <div className="cart-item-info">
 
-                        <section className="cart-items">
+                                <h3>
+                                    {item.product?.name ||
+                                        item.productName ||
+                                        "Ürün"}
+                                </h3>
 
-                            {cart.items.map((item) => (
+                                <p className="cart-item-price">
+                                    {Number(
+                                        item.product?.price ??
+                                        item.unitPrice ??
+                                        0
+                                    ).toLocaleString(
+                                        "tr-TR",
+                                        {
+                                            style: "currency",
+                                            currency: "TRY"
+                                        }
+                                    )}
+                                </p>
 
-                                <article
-                                    className="cart-item"
-                                    key={item.id}
+                            </div>
+
+                            {/* ADET */}
+                            <div className="cart-item-quantity">
+
+                                <button
+                                    onClick={() =>
+                                        updateQuantity(
+                                            item.id,
+                                            item.quantity - 1
+                                        )
+                                    }
+                                    disabled={
+                                        item.quantity <= 1
+                                    }
                                 >
-
-                                    <div className="product-icon">
-                                        🛍️
-                                    </div>
-
-
-                                    <div className="product-info">
-
-                                        <h3>
-                                            {item.productName}
-                                        </h3>
-
-                                        <span>
-                                            Birim fiyat:{" "}
-
-                                            {Number(
-                                                item.unitPrice || 0
-                                            ).toLocaleString(
-                                                "tr-TR",
-                                                {
-                                                    style: "currency",
-                                                    currency: "TRY"
-                                                }
-                                            )}
-
-                                        </span>
-
-                                    </div>
-
-
-                                    <div className="quantity-control">
-
-                                        <button
-                                            onClick={() =>
-                                                updateQuantity(
-                                                    item,
-                                                    item.quantity - 1
-                                                )
-                                            }
-                                            disabled={
-                                                item.quantity <= 1
-                                            }
-                                        >
-                                            −
-                                        </button>
-
-
-                                        <strong>
-                                            {item.quantity}
-                                        </strong>
-
-
-                                        <button
-                                            onClick={() =>
-                                                updateQuantity(
-                                                    item,
-                                                    item.quantity + 1
-                                                )
-                                            }
-                                            disabled={
-                                                item.quantity >= item.stock
-                                            }
-                                        >
-                                            +
-                                        </button>
-
-                                    </div>
-
-
-                                    <div className="item-total">
-
-                                        {Number(
-                                            item.totalPrice || 0
-                                        ).toLocaleString(
-                                            "tr-TR",
-                                            {
-                                                style: "currency",
-                                                currency: "TRY"
-                                            }
-                                        )}
-
-                                    </div>
-
-
-                                    <button
-                                        className="remove-item"
-                                        onClick={() =>
-                                            removeItem(item.id)
-                                        }
-                                        title="Ürünü kaldır"
-                                    >
-                                        🗑️
-                                    </button>
-
-                                </article>
-
-                            ))}
-
-                        </section>
-
-
-                        {/* SUMMARY */}
-
-                        <aside className="cart-summary">
-
-                            <h2>
-                                Sipariş Özeti
-                            </h2>
-
-
-                            <div className="summary-row">
+                                    −
+                                </button>
 
                                 <span>
-                                    Ürün Sayısı
+                                    {item.quantity}
                                 </span>
 
-                                <strong>
-                                    {getTotalQuantity()}
-                                </strong>
+                                <button
+                                    onClick={() =>
+                                        updateQuantity(
+                                            item.id,
+                                            item.quantity + 1
+                                        )
+                                    }
+                                >
+                                    +
+                                </button>
 
                             </div>
 
-
-                            <div className="summary-row">
-
-                                <span>
-                                    Ara Toplam
-                                </span>
+                            {/* TOPLAM */}
+                            <div className="cart-item-total">
 
                                 <strong>
-
-                                    {getTotal().toLocaleString(
+                                    {Number(
+                                        item.totalPrice || 0
+                                    ).toLocaleString(
                                         "tr-TR",
                                         {
                                             style: "currency",
                                             currency: "TRY"
                                         }
                                     )}
-
                                 </strong>
 
                             </div>
 
-
-                            <div className="summary-row">
-
-                                <span>
-                                    Kargo
-                                </span>
-
-                                <strong>
-                                    Ücretsiz
-                                </strong>
-
-                            </div>
-
-
-                            <div className="summary-divider"></div>
-
-
-                            <div className="summary-total">
-
-                                <span>
-                                    Genel Toplam
-                                </span>
-
-                                <strong>
-
-                                    {getTotal().toLocaleString(
-                                        "tr-TR",
-                                        {
-                                            style: "currency",
-                                            currency: "TRY"
-                                        }
-                                    )}
-
-                                </strong>
-
-                            </div>
-
-
+                            {/* SİL */}
                             <button
-                                className="checkout-button"
-                                onClick={createOrder}
-                            >
-                                Sipariş Ver
-
-                                <span>
-                                    →
-                                </span>
-
-                            </button>
-
-
-                            <button
-                                className="continue-shopping"
+                                className="remove-item-button"
                                 onClick={() =>
-                                    navigate("/products")
+                                    removeItem(item.id)
                                 }
                             >
-                                ← Alışverişe Devam Et
+                                🗑️
                             </button>
 
-                        </aside>
+                        </div>
+                    ))}
+                </div>
+
+                {/* SAĞ TARAF */}
+                <div className="cart-summary">
+
+                    {/* KUPON */}
+                    <div className="coupon-section">
+
+                        <h3>
+                            Kupon Kodu
+                        </h3>
+
+                        {!appliedCoupon?.success ? (
+                            <div className="coupon-input-wrapper">
+
+                                <input
+                                    type="text"
+                                    value={couponCode}
+                                    onChange={(e) =>
+                                        setCouponCode(
+                                            e.target.value.toUpperCase()
+                                        )
+                                    }
+                                    placeholder="Kupon kodunuzu girin"
+                                    disabled={
+                                        couponLoading
+                                    }
+                                />
+
+                                <button
+                                    onClick={applyCoupon}
+                                    disabled={
+                                        couponLoading
+                                    }
+                                >
+                                    {couponLoading
+                                        ? "Uygulanıyor..."
+                                        : "Uygula"}
+                                </button>
+
+                            </div>
+                        ) : (
+                            <div className="applied-coupon">
+
+                                <div>
+                                    <strong>
+                                        🎟️{" "}
+                                        {
+                                            appliedCoupon.couponCode
+                                        }
+                                    </strong>
+
+                                    <span>
+                                        Kupon uygulandı
+                                    </span>
+                                </div>
+
+                                <button
+                                    onClick={
+                                        removeCoupon
+                                    }
+                                >
+                                    Kaldır
+                                </button>
+
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ÖZET */}
+                    <div className="summary-section">
+
+                        <h2>
+                            Sipariş Özeti
+                        </h2>
+
+                        <div className="summary-row">
+                            <span>
+                                Ürünler
+                            </span>
+
+                            <span>
+                                {getTotal().toLocaleString(
+                                    "tr-TR",
+                                    {
+                                        style: "currency",
+                                        currency: "TRY"
+                                    }
+                                )}
+                            </span>
+                        </div>
+
+                        {appliedCoupon?.success && (
+                            <div className="summary-row discount-row">
+                                <span>
+                                    Kupon İndirimi
+                                </span>
+
+                                <span>
+                                    -
+                                    {Number(
+                                        appliedCoupon.discountAmount
+                                    ).toLocaleString(
+                                        "tr-TR",
+                                        {
+                                            style: "currency",
+                                            currency: "TRY"
+                                        }
+                                    )}
+                                </span>
+                            </div>
+                        )}
+
+                        <div className="summary-divider"></div>
+
+                        <div className="summary-total">
+                            <span>
+                                Ödenecek Tutar
+                            </span>
+
+                            <strong>
+                                {getFinalTotal().toLocaleString(
+                                    "tr-TR",
+                                    {
+                                        style: "currency",
+                                        currency: "TRY"
+                                    }
+                                )}
+                            </strong>
+                        </div>
+
+                        <button
+                            className="checkout-button"
+                            onClick={createOrder}
+                        >
+                            Ödemeye Geç →
+                        </button>
+
+                        <p className="secure-payment-text">
+                            🔒 Güvenli ödeme
+                        </p>
 
                     </div>
 
-                )}
-
-            </main>
-
+                </div>
+            </div>
         </div>
-
     );
 }
 
 export default Cart;
-
-
-
-
-//vscode test 12345

@@ -118,6 +118,19 @@ function AdminLayout() {
                         <span>👥</span>
                         <span>Kullanıcılar</span>
                     </button>
+                    <button
+                        className={
+                            isActive("/admin/coupons")
+                                ? "admin-menu-item active"
+                                : "admin-menu-item"
+                        }
+                        onClick={() =>
+                            navigate("/admin/coupons")
+                        }
+                    >
+                        <span>🎟️</span>
+                        <span>Kuponlar</span>
+                    </button>
 
                 </nav>
 

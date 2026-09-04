@@ -16,7 +16,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Category> Categories => Set<Category>();
 
     public DbSet<Product> Products => Set<Product>();
-
+    public DbSet<Coupon> Coupons { get; set; }
     public DbSet<Cart> Carts => Set<Cart>();
     public DbSet<Payment> Payments { get; set; }
     public DbSet<CartItem> CartItems => Set<CartItem>();

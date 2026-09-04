@@ -8,6 +8,7 @@ public static class DependencyInjectionConfiguration
     public static IServiceCollection AddDependencyInjectionConfiguration(
         this IServiceCollection services)
     {
+        services.AddScoped<ICouponService, CouponService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProductService, ProductService>();
